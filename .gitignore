@@ -1,0 +1,16 @@
+# Build output
+lib/
+dist/
+
+# Dependencies
+node_modules/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+.idea/
+.vscode/
+
+# Test artifacts
+coverage/
