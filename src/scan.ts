@@ -45,7 +45,7 @@ export function candidateFiles(): ConfigCandidate[] {
   let entries: string[] = []
   try {
     entries = readdirSync(profiles, { withFileTypes: true })
-      .filter(entry => entry.isDirectory())
+      .filter(entry => entry.isDirectory() && entry.name !== 'node_modules')
       .map(entry => entry.name)
   } catch {
     entries = []

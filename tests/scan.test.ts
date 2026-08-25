@@ -1,5 +1,26 @@
-import { describe, expect, it } from 'vitest'
-import { scanRows } from '../src/scan.ts'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import { candidateFiles, scanRows } from '../src/scan.ts'
+
+/** A throwaway deployment home for candidateFiles tests. */
+function fakeHome(): string {
+  const home = mkdtempSync(join(tmpdir(), 'dsh-mcp-test-'))
+  mkdirSync(join(home, 'profiles', 'web'), { recursive: true })
+  mkdirSync(join(home, 'profiles', 'node_modules'), { recursive: true })
+  writeFileSync(join(home, 'profiles', 'web', 'cordis.yml'), '[]')
+  writeFileSync(join(home, 'profiles', 'web', 'cordis.patch.yml'), '[]')
+  writeFileSync(join(home, 'profiles', 'node_modules', 'cordis.patch.yml'), '[]')
+  return home
+}
+
+const savedHome = process.env.DSH_HOME
+
+afterEach(() => {
+  if (savedHome === undefined) delete process.env.DSH_HOME
+  else process.env.DSH_HOME = savedHome
+})
 
 const SAMPLE = [
   '# comment',
@@ -58,5 +79,23 @@ describe('scanRows', () => {
       url: '',
       disabled: false,
     }])
+  })
+})
+
+describe('candidateFiles', () => {
+  it('scans real profiles but skips node_modules directories', () => {
+    const home = fakeHome()
+    try {
+      process.env.DSH_HOME = home
+      const files = candidateFiles()
+      const labels = files.map(file => file.label)
+      expect(labels).toContain('部署补丁层')
+      expect(labels).toContain('web 配置')
+      expect(labels).toContain('web 补丁层')
+      expect(labels).not.toContain('node_modules 配置')
+      expect(labels).not.toContain('node_modules 补丁层')
+    } finally {
+      rmSync(home, { recursive: true, force: true })
+    }
   })
 })
